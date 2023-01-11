@@ -2,12 +2,18 @@ package com.example.chat.service.impl;
 
 import com.example.chat.exception.ResourceAlreadyExistException;
 import com.example.chat.model.user.User;
+import com.example.chat.payload.auth.AuthRequest;
+import com.example.chat.payload.auth.AuthResponse;
 import com.example.chat.payload.user.UserDto;
 import com.example.chat.repository.UserRepository;
 import com.example.chat.service.AuthService;
+import com.example.chat.service.JwtService;
 import com.example.chat.utils.PayloadMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +29,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final AuthenticationManager authManager;
     private final PayloadMapper mapper;
 
     @Override
@@ -45,6 +53,17 @@ public class AuthServiceImpl implements AuthService {
 
         User user = createUser(userDto);
         return mapper.mapUserToUserDto(user);
+    }
+
+    @Override
+    public AuthResponse signIn(AuthRequest request) {
+        log.debug("Authenticate user: {}", request.getEmail());
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
+        authentication = authManager.authenticate(authentication);
+
+        String token = jwtService.createToken(authentication);
+        return new AuthResponse(token);
     }
 
     private User createUser(UserDto userDto) {
