@@ -166,4 +166,18 @@ class AuthServiceImplTest {
         assertThrows(BadCredentialsException.class, () -> authService.signIn(request));
         verify(authManager).authenticate(auth);
     }
+
+    @Test
+    void givenGetActor_thenReturnDtoOfActor() {
+        // given
+        User actor = User.builder().email("test@mail.com").nickname("nickname").build();
+
+        // when
+        UserDto response = authService.getActor(actor);
+
+        // then
+        verify(mapper).mapUserToUserDto(actor);
+        assertThat(response.getEmail(), is(actor.getEmail()));
+        assertThat(response.getNickname(), is(actor.getNickname()));
+    }
 }

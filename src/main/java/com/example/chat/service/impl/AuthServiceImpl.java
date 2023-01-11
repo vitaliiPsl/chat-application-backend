@@ -66,6 +66,13 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse(token);
     }
 
+    @Override
+    public UserDto getActor(User user) {
+        log.debug("Get actor user {}", user);
+
+        return mapper.mapUserToUserDto(user);
+    }
+
     private User createUser(UserDto userDto) {
         User user = User.builder()
                 .email(userDto.getEmail())

@@ -1,5 +1,6 @@
 package com.example.chat.service;
 
+import com.example.chat.model.user.User;
 import com.example.chat.payload.auth.AuthRequest;
 import com.example.chat.payload.auth.AuthResponse;
 import com.example.chat.payload.user.UserDto;
@@ -24,4 +25,12 @@ public interface AuthService {
      * @return auth response that contains the JWT token
      */
     AuthResponse signIn(AuthRequest request);
+
+    /**
+     * Get actor. Just map it to the dto
+     *
+     * @param user authenticated user
+     * @return actor user dto
+     */
+    UserDto getActor(User user);
 }
