@@ -10,3 +10,8 @@ spring:
 logging:
   level:
     com.example.chat: DEBUG
+
+security:
+  jwt:
+    secret: jwt.super.secret.key
+    token-expiration-time-min: 10080 # 7 days
