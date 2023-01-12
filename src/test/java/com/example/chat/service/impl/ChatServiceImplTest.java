@@ -2,16 +2,22 @@ package com.example.chat.service.impl;
 
 import com.example.chat.exception.ResourceNotFoundException;
 import com.example.chat.model.chat.Chat;
+import com.example.chat.model.chat.member.Member;
+import com.example.chat.model.chat.member.MemberId;
+import com.example.chat.model.chat.member.MemberRole;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
 import com.example.chat.payload.chat.UserId;
 import com.example.chat.repository.ChatRepository;
+import com.example.chat.repository.MemberRepository;
 import com.example.chat.repository.UserRepository;
 import com.example.chat.utils.PayloadMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,6 +38,9 @@ class ChatServiceImplTest {
     ChatRepository chatRepository;
     @Mock
     UserRepository userRepository;
+    @Mock
+    MemberRepository memberRepository;
+
     PayloadMapper mapper;
 
     ChatServiceImpl chatService;
@@ -42,7 +51,7 @@ class ChatServiceImplTest {
         ModelMapper modelMapper = Mockito.spy(ModelMapper.class);
         mapper = Mockito.spy(new PayloadMapper(modelMapper));
 
-        chatService = new ChatServiceImpl(chatRepository, userRepository, mapper);
+        chatService = new ChatServiceImpl(chatRepository, userRepository, memberRepository, mapper);
     }
 
     @Test
@@ -125,5 +134,68 @@ class ChatServiceImplTest {
 
         // then
         assertThrows(RuntimeException.class, () -> chatService.createChat(chatDto, actor));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MemberRole.class, mode = EnumSource.Mode.INCLUDE, names = {"OWNER", "ADMIN"})
+    void whenUpdateChat_givenValidRequest_thenUpdateChat(MemberRole role) {
+        // given
+        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+
+        MemberId memberId = new MemberId(actor.getId(), chat.getId());
+        Member member = Member.builder().id(memberId).user(actor).chat(chat).role(role).build();
+
+        ChatDto chatDto = ChatDto.builder().name("Updated test").description("Updated description").build();
+
+        // when
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+
+        ChatDto result = chatService.updateChat(chat.getId(), chatDto, actor);
+
+        // then
+        verify(memberRepository).findById(memberId);
+
+        assertThat(result.getName(), Matchers.is(chatDto.getName()));
+        assertThat(result.getDescription(), Matchers.is(chatDto.getDescription()));
+        assertThat(result.getUpdatedAt(), Matchers.notNullValue());
+    }
+
+    @Test
+    void whenUpdateChat_givenMemberIsDefaultUser_thenThrowException() {
+        // given
+        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+
+        MemberId memberId = new MemberId(actor.getId(), chat.getId());
+        Member member = Member.builder().id(memberId).user(actor).chat(chat).role(MemberRole.DEFAULT).build();
+
+        ChatDto chatDto = ChatDto.builder().name("Updated test").description("Updated description").build();
+
+        // when
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+
+        // then
+        assertThrows(RuntimeException.class, () -> chatService.updateChat(chat.getId(), chatDto, actor));
+        verify(memberRepository).findById(memberId);
+    }
+
+    @Test
+    void whenUpdateChat_givenMemberDoesntExist_thenThrowException() {
+        // given
+        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+
+        String chatId = "4321-qwer";
+
+        MemberId memberId = new MemberId(actor.getId(), chatId);
+
+        ChatDto chatDto = ChatDto.builder().name("Updated test").description("Updated description").build();
+
+        // when
+        when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(RuntimeException.class, () -> chatService.updateChat(chatId, chatDto, actor));
+        verify(memberRepository).findById(memberId);
     }
 }

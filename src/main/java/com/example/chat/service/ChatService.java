@@ -16,4 +16,14 @@ public interface ChatService {
      * @return created chat
      */
     ChatDto createChat(ChatDto chatDto, User actor);
+
+    /**
+     * Update chat with the given id. Requires actor to be owner or admin
+     *
+     * @param chatId  id of the chat
+     * @param chatDto update details
+     * @param actor   authenticated user
+     * @return updated chat
+     */
+    ChatDto updateChat(String chatId, ChatDto chatDto, User actor);
 }

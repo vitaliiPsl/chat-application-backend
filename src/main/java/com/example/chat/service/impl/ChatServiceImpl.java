@@ -3,11 +3,13 @@ package com.example.chat.service.impl;
 import com.example.chat.exception.ResourceNotFoundException;
 import com.example.chat.model.chat.Chat;
 import com.example.chat.model.chat.member.Member;
+import com.example.chat.model.chat.member.MemberId;
 import com.example.chat.model.chat.member.MemberRole;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
 import com.example.chat.payload.chat.UserId;
 import com.example.chat.repository.ChatRepository;
+import com.example.chat.repository.MemberRepository;
 import com.example.chat.repository.UserRepository;
 import com.example.chat.service.ChatService;
 import com.example.chat.utils.PayloadMapper;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final UserRepository userRepository;
+    private final MemberRepository memberRepository;
 
     private final PayloadMapper mapper;
 
@@ -39,6 +42,34 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = buildChat(chatDto, actor);
 
         return mapper.mapChatToChatDto(chat);
+    }
+
+    @Override
+    public ChatDto updateChat(String chatId, ChatDto chatDto, User actor) {
+        log.debug("Update chat {}. Update details {}. Actor: {}", chatId, chatDto, actor);
+
+        Member member = getMemberById(actor.getId(), chatId);
+        if(member.getRole() == MemberRole.DEFAULT) {
+            log.error("Only the owner and admins can update the chat");
+            throw new IllegalStateException("Only the owner and admins can update the chat");
+        }
+
+        Chat chat = updateChat(member.getChat(), chatDto);
+        return mapper.mapChatToChatDto(chat);
+    }
+
+    private Member getMemberById(String userId, String chatId) {
+        log.debug("Get member: user id {}, chat id {}", userId, chatId);
+
+        MemberId id = new MemberId(userId, chatId);
+
+        Optional<Member> member = memberRepository.findById(id);
+        if(member.isEmpty()) {
+            log.error("User {} is not a member of chat {}", userId, chatId);
+            throw new IllegalStateException("User is not a member of the chat");
+        }
+
+        return member.get();
     }
 
     private User getUserById(String userId) {
@@ -62,8 +93,6 @@ public class ChatServiceImpl implements ChatService {
         chat = chatRepository.save(chat);
 
         // map owner
-        System.out.println(actor);
-        System.out.println(chat);
         Member owner = new Member(actor, chat, MemberRole.OWNER);
         chat.addMember(owner);
 
@@ -101,5 +130,13 @@ public class ChatServiceImpl implements ChatService {
         }
 
         return member;
+    }
+
+    private static Chat updateChat(Chat chat, ChatDto chatDto) {
+        chat.setName(chatDto.getName());
+        chat.setDescription(chatDto.getDescription());
+        chat.setUpdatedAt(LocalDateTime.now());
+
+        return chat;
     }
 }
