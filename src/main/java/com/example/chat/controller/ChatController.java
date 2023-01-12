@@ -52,4 +52,14 @@ public class ChatController {
 
         chatService.deleteChat(chatId, actor);
     }
+
+    @GetMapping("{chatId}")
+    ChatDto getChat(
+            @PathVariable String chatId,
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Get chat {}", chatId);
+
+        return chatService.getChat(chatId, actor);
+    }
 }

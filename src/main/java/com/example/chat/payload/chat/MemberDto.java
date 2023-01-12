@@ -2,7 +2,7 @@ package com.example.chat.payload.chat;
 
 import com.example.chat.model.chat.member.MemberRole;
 import com.example.chat.payload.user.UserDto;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class MemberDto {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @JsonIgnoreProperties({"email"})
+    @JsonIncludeProperties({"id", "nickname"})
     private UserDto user;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
