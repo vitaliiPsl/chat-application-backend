@@ -2,14 +2,13 @@ package com.example.chat.controller;
 
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
+import com.example.chat.payload.groups.CreateRequest;
 import com.example.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
@@ -22,11 +21,22 @@ public class ChatController {
 
     @PostMapping
     ChatDto createChat(
-            @RequestBody @Valid ChatDto chatDto,
+            @RequestBody @Validated(CreateRequest.class) ChatDto chatDto,
             @AuthenticationPrincipal User actor
     ) {
         log.debug("Create new chat: {}", chatDto);
 
         return chatService.createChat(chatDto, actor);
+    }
+
+    @PutMapping("{chatId}")
+    ChatDto createChat(
+            @PathVariable String chatId,
+            @RequestBody @Valid ChatDto chatDto,
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Update chat {}. Update details: {}", chatId, chatDto);
+
+        return chatService.updateChat(chatId, chatDto, actor);
     }
 }

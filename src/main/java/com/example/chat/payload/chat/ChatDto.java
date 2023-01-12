@@ -1,5 +1,7 @@
 package com.example.chat.payload.chat;
 
+import com.example.chat.payload.groups.CreateRequest;
+import com.example.chat.payload.groups.UpdateRequest;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -22,14 +24,14 @@ public class ChatDto {
     private String id;
 
     @JsonProperty(access = JsonProperty.Access.READ_WRITE)
-    @NotBlank(message = "Name of the chat is required")
+    @NotBlank(message = "Name of the chat is required", groups = {CreateRequest.class, UpdateRequest.class})
     private String name;
 
     @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private String description;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    @NotEmpty(message = "There must be at least one other user in the chat")
+    @NotEmpty(message = "There must be at least one other user in the chat", groups = {CreateRequest.class})
     private List<UserId> users;
 
     @JsonIgnoreProperties({"chat"})
@@ -38,4 +40,7 @@ public class ChatDto {
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime createdAt;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private LocalDateTime updatedAt;
 }
