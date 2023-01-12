@@ -58,6 +58,20 @@ public class ChatServiceImpl implements ChatService {
         return mapper.mapChatToChatDto(chat);
     }
 
+    @Override
+    public void deleteChat(String chatId, User actor) {
+        log.debug("Delete chat {}", chatId);
+
+        Member member = getMemberById(actor.getId(), chatId);
+        if(member.getRole() != MemberRole.OWNER) {
+            log.error("Only the owner can delete the chat");
+            throw new IllegalStateException("Only the owner can delete the chat");
+        }
+
+        Chat chat = member.getChat();
+        chatRepository.delete(chat);
+    }
+
     private Member getMemberById(String userId, String chatId) {
         log.debug("Get member: user id {}, chat id {}", userId, chatId);
 
@@ -66,7 +80,7 @@ public class ChatServiceImpl implements ChatService {
         Optional<Member> member = memberRepository.findById(id);
         if(member.isEmpty()) {
             log.error("User {} is not a member of chat {}", userId, chatId);
-            throw new IllegalStateException("User is not a member of the chat");
+            throw new IllegalStateException("Not a member of the chat");
         }
 
         return member.get();

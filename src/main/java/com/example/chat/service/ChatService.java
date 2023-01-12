@@ -26,4 +26,12 @@ public interface ChatService {
      * @return updated chat
      */
     ChatDto updateChat(String chatId, ChatDto chatDto, User actor);
+
+    /**
+     * Delete chat with the given id. Requires actor to the owner
+     *
+     * @param chatId id of the chat
+     * @param actor  authenticated user
+     */
+    void deleteChat(String chatId, User actor);
 }

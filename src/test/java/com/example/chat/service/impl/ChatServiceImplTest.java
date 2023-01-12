@@ -198,4 +198,57 @@ class ChatServiceImplTest {
         assertThrows(RuntimeException.class, () -> chatService.updateChat(chatId, chatDto, actor));
         verify(memberRepository).findById(memberId);
     }
+
+    @Test
+    void whenDeleteChat_givenValidRequest_thenDeleteChat() {
+        // given
+        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+
+        MemberId memberId = new MemberId(actor.getId(), chat.getId());
+        Member member = Member.builder().id(memberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
+
+        // when
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+
+        chatService.deleteChat(chat.getId(), actor);
+
+        // then
+        verify(memberRepository).findById(memberId);
+        verify(chatRepository).delete(chat);
+    }
+
+    @Test
+    void whenDeleteChat_givenMemberDoesntExist_thenThrowException() {
+        // given
+        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+
+        MemberId memberId = new MemberId(actor.getId(), chat.getId());
+
+        // when
+        when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(IllegalStateException.class, () -> chatService.deleteChat(chat.getId(), actor));
+        verify(memberRepository).findById(memberId);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MemberRole.class, mode = EnumSource.Mode.INCLUDE, names = {"DEFAULT", "ADMIN"})
+    void whenDeleteChat_givenMemberIsNotOwner_thenThrowException(MemberRole role) {
+        // given
+        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+
+        MemberId memberId = new MemberId(actor.getId(), chat.getId());
+        Member member = Member.builder().id(memberId).user(actor).chat(chat).role(role).build();
+
+        // when
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+
+        // then
+        assertThrows(IllegalStateException.class, () -> chatService.deleteChat(chat.getId(), actor));
+        verify(memberRepository).findById(memberId);
+    }
 }
