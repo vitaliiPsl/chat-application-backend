@@ -83,6 +83,15 @@ public class ChatServiceImpl implements ChatService {
         return mapper.mapChatToChatDto(chat);
     }
 
+    @Override
+    public List<ChatDto> getChatsOfActor(User actor) {
+        log.debug("Get chats of actor");
+
+        List<Chat> chats = chatRepository.findByUserId(actor.getId());
+
+        return chats.stream().map(mapper::mapChatToChatDto).collect(Collectors.toList());
+    }
+
     private Member getMemberById(String userId, String chatId) {
         log.debug("Get member: user id {}, chat id {}", userId, chatId);
 

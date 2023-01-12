@@ -12,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -19,6 +20,15 @@ import javax.validation.Valid;
 @RequestMapping("/api/chats")
 public class ChatController {
     private final ChatService chatService;
+
+    @GetMapping
+    List<ChatDto> getChatsByUserId(
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Get chats of current user");
+
+        return chatService.getChatsOfActor(actor);
+    }
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping

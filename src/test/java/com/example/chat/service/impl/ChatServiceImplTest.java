@@ -289,4 +289,25 @@ class ChatServiceImplTest {
         assertThrows(RuntimeException.class, () -> chatService.getChat(chat.getId(), actor));
         verify(memberRepository).findById(memberId);
     }
+
+    @Test
+    void whenGetChatsOfActor_givenValidRequest_thenReturnChats() {
+        // given
+        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+
+        Chat chat1 = Chat.builder().id("4321-qwer").name("Test").build();
+        Chat chat2 = Chat.builder().id("qwer-4321").name("Test 1").build();
+
+        List<Chat> chats = List.of(chat1, chat2);
+
+        // when
+        when(chatRepository.findByUserId(actor.getId())).thenReturn(chats);
+
+        List<ChatDto> result = chatService.getChatsOfActor(actor);
+
+        // then
+        verify(chatRepository).findByUserId(actor.getId());
+
+        assertThat(result, Matchers.hasSize(2));
+    }
 }

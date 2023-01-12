@@ -3,6 +3,8 @@ package com.example.chat.service;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
 
+import java.util.List;
+
 /**
  * Chat service
  */
@@ -43,4 +45,12 @@ public interface ChatService {
      * @return retrieved chat
      */
     ChatDto getChat(String chatId, User actor);
+
+    /**
+     * Get chats of authenticated user
+     *
+     * @param actor  authenticated user
+     * @return retrieved chat
+     */
+    List<ChatDto> getChatsOfActor(User actor);
 }
