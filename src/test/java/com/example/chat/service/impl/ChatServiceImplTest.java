@@ -251,4 +251,42 @@ class ChatServiceImplTest {
         assertThrows(IllegalStateException.class, () -> chatService.deleteChat(chat.getId(), actor));
         verify(memberRepository).findById(memberId);
     }
+
+
+    @Test
+    void whenGetChat_givenValidRequest_thenReturnChat() {
+        // given
+        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+
+        MemberId memberId = new MemberId(actor.getId(), chat.getId());
+        Member member = Member.builder().id(memberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
+
+        // when
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+
+        ChatDto result = chatService.getChat(chat.getId(), actor);
+
+        // then
+        verify(memberRepository).findById(memberId);
+
+        assertThat(result.getId(), Matchers.is(chat.getId()));
+        assertThat(result.getName(), Matchers.is(chat.getName()));
+    }
+
+    @Test
+    void whenGetChat_givenIsNotAMember_thenThrowException() {
+        // given
+        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+
+        MemberId memberId = new MemberId(actor.getId(), chat.getId());
+
+        // when
+        when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(RuntimeException.class, () -> chatService.getChat(chat.getId(), actor));
+        verify(memberRepository).findById(memberId);
+    }
 }

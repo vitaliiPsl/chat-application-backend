@@ -72,6 +72,17 @@ public class ChatServiceImpl implements ChatService {
         chatRepository.delete(chat);
     }
 
+    @Override
+    public ChatDto getChat(String chatId, User actor) {
+        log.debug("Get chat by id {}", chatId);
+
+        // Get the member to verify that chat exists and the user is its member
+        Member member = getMemberById(actor.getId(), chatId);
+
+        Chat chat = member.getChat();
+        return mapper.mapChatToChatDto(chat);
+    }
+
     private Member getMemberById(String userId, String chatId) {
         log.debug("Get member: user id {}, chat id {}", userId, chatId);
 

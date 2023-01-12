@@ -34,4 +34,13 @@ public interface ChatService {
      * @param actor  authenticated user
      */
     void deleteChat(String chatId, User actor);
+
+    /**
+     * Get chat by id
+     *
+     * @param chatId id of the chat
+     * @param actor  authenticated user
+     * @return retrieved chat
+     */
+    ChatDto getChat(String chatId, User actor);
 }
