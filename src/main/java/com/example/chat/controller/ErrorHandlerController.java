@@ -70,6 +70,13 @@ public class ErrorHandlerController {
         return buildResponseEntity(new ApiError(NOT_FOUND, e.getMessage(), e));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    protected ResponseEntity<ApiError> handleIllegalStateException(IllegalStateException e) {
+        log.error("handle illegal state: {}", e.getMessage(), e);
+
+        return buildResponseEntity(new ApiError(BAD_REQUEST, e.getMessage(), e));
+    }
+
     private ResponseEntity<ApiError> buildResponseEntity(ApiError apiError) {
         return new ResponseEntity<>(apiError, apiError.getStatus());
     }
