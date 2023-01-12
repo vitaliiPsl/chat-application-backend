@@ -6,6 +6,7 @@ import com.example.chat.payload.groups.CreateRequest;
 import com.example.chat.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ import javax.validation.Valid;
 public class ChatController {
     private final ChatService chatService;
 
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
     ChatDto createChat(
             @RequestBody @Validated(CreateRequest.class) ChatDto chatDto,
@@ -38,5 +40,16 @@ public class ChatController {
         log.debug("Update chat {}. Update details: {}", chatId, chatDto);
 
         return chatService.updateChat(chatId, chatDto, actor);
+    }
+
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @DeleteMapping("{chatId}")
+    void createChat(
+            @PathVariable String chatId,
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Delete chat {}", chatId);
+
+        chatService.deleteChat(chatId, actor);
     }
 }
