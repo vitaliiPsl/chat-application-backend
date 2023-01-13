@@ -72,6 +72,7 @@ public class ChatServiceImpl implements ChatService {
         chatRepository.delete(chat);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public ChatDto getChat(String chatId, User actor) {
         log.debug("Get chat by id {}", chatId);
@@ -83,6 +84,7 @@ public class ChatServiceImpl implements ChatService {
         return mapper.mapChatToChatDto(chat);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<ChatDto> getChatsOfActor(User actor) {
         log.debug("Get chats of actor");
