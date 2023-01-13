@@ -1,6 +1,7 @@
 package com.example.chat.payload.chat;
 
 import com.example.chat.model.chat.member.MemberRole;
+import com.example.chat.payload.groups.UpdateRequest;
 import com.example.chat.payload.user.UserDto;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Data
@@ -20,7 +22,8 @@ public class MemberDto {
     @JsonIncludeProperties({"id", "nickname"})
     private UserDto user;
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonProperty(access = JsonProperty.Access.READ_WRITE)
+    @NotNull(message = "Role of the member is required", groups = UpdateRequest.class)
     private MemberRole role;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
