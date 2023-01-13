@@ -2,6 +2,7 @@ package com.example.chat.service;
 
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.MemberDto;
+import com.example.chat.payload.chat.UserId;
 
 import java.util.List;
 
@@ -24,4 +25,14 @@ public interface MemberService {
      * @return list of the chat members
      */
     List<MemberDto> getChatMembers(String chatId, User actor);
+
+    /**
+     * Add new chat member
+     *
+     * @param chatId id of the chat
+     * @param userId id of the user
+     * @param actor  authenticated user
+     * @return created chat member
+     */
+    MemberDto addChatMember(String chatId, UserId userId, User actor);
 }

@@ -1,10 +1,16 @@
 package com.example.chat.service.impl;
 
+import com.example.chat.exception.ResourceNotFoundException;
+import com.example.chat.model.chat.Chat;
 import com.example.chat.model.chat.member.Member;
 import com.example.chat.model.chat.member.MemberId;
+import com.example.chat.model.chat.member.MemberRole;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.MemberDto;
+import com.example.chat.payload.chat.UserId;
+import com.example.chat.repository.ChatRepository;
 import com.example.chat.repository.MemberRepository;
+import com.example.chat.repository.UserRepository;
 import com.example.chat.service.MemberService;
 import com.example.chat.utils.PayloadMapper;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +30,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
+    private final ChatRepository chatRepository;
+    private final UserRepository userRepository;
     private final PayloadMapper mapper;
 
     @Transactional(readOnly = true)
@@ -50,5 +59,49 @@ public class MemberServiceImpl implements MemberService {
         return members.stream()
                 .sorted(Comparator.comparing(member -> member.getRole().ordinal()))
                 .map(mapper::mapMemberToMemberDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public MemberDto addChatMember(String chatId, UserId userId, User actor) {
+        log.debug("Add new user with id {} to the chat {}", userId, chatId);
+
+        Member actorMember = getMemberById(actor.getId(), chatId);
+
+        if (isMemberOfTheChat(userId.getId(), chatId)) {
+            log.error("User {} is already a member of the chat {}", userId.getId(), chatId);
+            throw new IllegalStateException("User is already a member of the chat");
+        }
+
+        User user = getUserById(userId.getId());
+        Member member = new Member(user, actorMember.getChat(), MemberRole.DEFAULT);
+
+        member = memberRepository.save(member);
+        return mapper.mapMemberToMemberDto(member);
+    }
+
+    private Member getMemberById(String userId, String chatId) {
+        log.debug("Get member: user id {}, chat id {}", userId, chatId);
+
+        MemberId id = new MemberId(userId, chatId);
+
+        Optional<Member> member = memberRepository.findById(id);
+        if (member.isEmpty()) {
+            log.error("User {} is not a member of chat {}", userId, chatId);
+            throw new IllegalStateException("Not a member of the chat");
+        }
+
+        return member.get();
+    }
+
+    private User getUserById(String userId) {
+        log.debug("Get user by id: {}", userId);
+
+        Optional<User> user = userRepository.findById(userId);
+        if (user.isEmpty()) {
+            log.error("User with id {} doesn't exist", userId);
+            throw new ResourceNotFoundException(userId, User.class);
+        }
+
+        return user.get();
     }
 }
