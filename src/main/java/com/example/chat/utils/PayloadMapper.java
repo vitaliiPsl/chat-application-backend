@@ -1,8 +1,10 @@
 package com.example.chat.utils;
 
 import com.example.chat.model.chat.Chat;
+import com.example.chat.model.chat.member.Member;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
+import com.example.chat.payload.chat.MemberDto;
 import com.example.chat.payload.user.UserDto;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -27,5 +29,13 @@ public class PayloadMapper {
 
     public Chat mapChatDtoToChat(ChatDto chatDto) {
         return modelMapper.map(chatDto, Chat.class);
+    }
+
+    public MemberDto mapMemberToMemberDto(Member member) {
+        return modelMapper.map(member, MemberDto.class);
+    }
+
+    public Member mapMemberDtoToMember(MemberDto memberDto) {
+        return modelMapper.map(memberDto, Member.class);
     }
 }
