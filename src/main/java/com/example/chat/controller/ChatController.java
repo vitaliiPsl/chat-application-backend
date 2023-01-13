@@ -98,4 +98,16 @@ public class ChatController {
 
         return memberService.addChatMember(chatId, userId, actor);
     }
+
+    @PutMapping("{chatId}/members/{memberId}")
+    MemberDto updateChatMember(
+            @PathVariable String chatId,
+            @PathVariable String memberId,
+            @RequestBody @Valid MemberDto memberDto,
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Update member {} of the chat {}. Update details: {}", memberId, chatId, memberDto);
+
+        return memberService.updateChatMember(chatId, memberId, memberDto, actor);
+    }
 }
