@@ -391,4 +391,201 @@ class MemberServiceImplTest {
         assertThrows(RuntimeException.class, () -> memberService.updateChatMember(chatId, userId, memberDto, actor));
         verify(memberRepository).findById(actorMemberId);
     }
+
+    @ParameterizedTest
+    @EnumSource(value = MemberRole.class, names = {"ADMIN", "OWNER"})
+    void whenRemoveChatMember_givenUserIsDefaultMemberAndActorIsTheOwnerOrAdmin_thenRemoveMember(MemberRole role) {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(role).build();
+
+        String userId = "qwre-1234";
+        User user = User.builder().id(userId).build();
+
+        MemberId userMemberId = new MemberId(userId, chatId);
+        Member userMember = Member.builder().id(userMemberId).user(user).chat(chat).role(MemberRole.DEFAULT).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+        when(memberRepository.findById(userMemberId)).thenReturn(Optional.of(userMember));
+
+        memberService.removeChatMember(chatId, userId, actor);
+
+        // then
+        verify(memberRepository).findById(actorMemberId);
+        verify(memberRepository).findById(userMemberId);
+        verify(memberRepository).delete(userMember);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MemberRole.class, names = {"ADMIN", "DEFAULT"})
+    void whenRemoveChatMember_givenUserToRemoveIsActorAndIsNotOwner_thenRemoveChat(MemberRole role) {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(role).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+
+        memberService.removeChatMember(chatId, actorId, actor);
+
+        // then
+        verify(memberRepository).findById(actorMemberId);
+        verify(memberRepository).delete(actorMember);
+    }
+
+    @Test
+    void whenRemoveChatMember_givenUserToRemoveIsActorWithRoleOwner_thenThrowException() {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.removeChatMember(chatId, actorId, actor));
+        verify(memberRepository).findById(actorMemberId);
+    }
+
+    @Test
+    void whenRemoveChatMember_givenActorIsNotMemberOfChat_thenThrowException() {
+        // given
+        String chatId = "2134-abcd";
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+
+        String userId = "qwre-1234";
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.removeChatMember(chatId, userId, actor));
+        verify(memberRepository).findById(actorMemberId);
+    }
+
+    @Test
+    void whenRemoveChatMember_givenActorIsDefaultUser_thenThrowException() {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.DEFAULT).build();
+
+        String userId = "qwre-1234";
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.removeChatMember(chatId, userId, actor));
+        verify(memberRepository).findById(actorMemberId);
+    }
+
+    @Test
+    void whenRemoveChatMember_givenUserIsNotChatMember_thenThrowException() {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
+
+        String userId = "qwre-1234";
+
+        MemberId userMemberId = new MemberId(userId, chatId);
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+        when(memberRepository.findById(userMemberId)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.removeChatMember(chatId, userId, actor));
+        verify(memberRepository).findById(actorMemberId);
+        verify(memberRepository).findById(userMemberId);
+    }
+
+    @Test
+    void whenRemoveChatMember_givenUserMemberIsTheOwner_thenThrowException() {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.ADMIN).build();
+
+        String userId = "qwre-1234";
+        User user = User.builder().id(userId).build();
+
+        MemberId userMemberId = new MemberId(userId, chatId);
+        Member userMember = Member.builder().id(userMemberId).user(user).chat(chat).role(MemberRole.OWNER).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+        when(memberRepository.findById(userMemberId)).thenReturn(Optional.of(userMember));
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.removeChatMember(chatId, userId, actor));
+        verify(memberRepository).findById(actorMemberId);
+        verify(memberRepository).findById(userMemberId);
+    }
+
+    @Test
+    void whenRemoveChatMember_givenUserMemberIsAdminAndActorMemberIsNotTheOwner_thenThrowException() {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.ADMIN).build();
+
+        String userId = "qwre-1234";
+        User user = User.builder().id(userId).build();
+
+        MemberId userMemberId = new MemberId(userId, chatId);
+        Member userMember = Member.builder().id(userMemberId).user(user).chat(chat).role(MemberRole.ADMIN).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+        when(memberRepository.findById(userMemberId)).thenReturn(Optional.of(userMember));
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.removeChatMember(chatId, userId, actor));
+        verify(memberRepository).findById(actorMemberId);
+        verify(memberRepository).findById(userMemberId);
+    }
 }

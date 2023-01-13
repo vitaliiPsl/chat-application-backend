@@ -106,6 +106,47 @@ public class MemberServiceImpl implements MemberService {
         return mapper.mapMemberToMemberDto(member);
     }
 
+    @Override
+    public void removeChatMember(String chatId, String userId, User actor) {
+        log.debug("Remove member {} from chat {}", userId, chatId);
+
+        Member actorMember = getMemberById(actor.getId(), chatId);
+        if (actor.getId().equals(userId)) {
+            leaveChat(actorMember);
+        } else {
+            removeMember(chatId, userId, actorMember);
+        }
+    }
+
+    private void leaveChat(Member member) {
+        if (member.getRole() == MemberRole.OWNER) {
+            log.error("Owner must assign ownership over the chat to another member before leaving");
+            throw new IllegalStateException("Owner must assign ownership over the chat to another member before leaving");
+        }
+
+        memberRepository.delete(member);
+    }
+
+    private void removeMember(String chatId, String userId, Member actorMember) {
+        if (actorMember.getRole() == MemberRole.DEFAULT) {
+            log.error("Only the owner and admins can remove other users");
+            throw new IllegalStateException("Only the owner and admins can remove other users");
+        }
+
+        Member member = getMemberById(userId, chatId);
+        if (member.getRole() == MemberRole.OWNER) {
+            log.error("No one can remove the owner of the chat");
+            throw new IllegalStateException("No one can remove the owner of the chat");
+        }
+
+        if (member.getRole() == MemberRole.ADMIN && actorMember.getRole() != MemberRole.OWNER) {
+            log.error("Only owner can remove admin");
+            throw new IllegalStateException("Only owner can remove admin");
+        }
+
+        memberRepository.delete(member);
+    }
+
     private Member getMemberById(String userId, String chatId) {
         log.debug("Get member: user id {}, chat id {}", userId, chatId);
 

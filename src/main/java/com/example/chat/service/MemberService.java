@@ -46,4 +46,13 @@ public interface MemberService {
      * @return updated chat member
      */
     MemberDto updateChatMember(String chatId, String userId, MemberDto memberDto, User actor);
+
+    /**
+     * Remove member of the chat
+     *
+     * @param chatId id of the chat
+     * @param user   id of the user
+     * @param actor  authenticated user
+     */
+    void removeChatMember(String chatId, String user, User actor);
 }
