@@ -2,8 +2,10 @@ package com.example.chat.controller;
 
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
+import com.example.chat.payload.chat.MemberDto;
 import com.example.chat.payload.groups.CreateRequest;
 import com.example.chat.service.ChatService;
+import com.example.chat.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import java.util.List;
 @RequestMapping("/api/chats")
 public class ChatController {
     private final ChatService chatService;
+    private final MemberService memberService;
 
     @GetMapping
     List<ChatDto> getChatsByUserId(
@@ -71,5 +74,15 @@ public class ChatController {
         log.debug("Get chat {}", chatId);
 
         return chatService.getChat(chatId, actor);
+    }
+
+    @GetMapping("{chatId}/members")
+    List<MemberDto> getChatMembers(
+            @PathVariable String chatId,
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Get members of the chat {}", chatId);
+
+        return memberService.getChatMembers(chatId, actor);
     }
 }
