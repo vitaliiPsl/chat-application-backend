@@ -3,6 +3,7 @@ package com.example.chat.controller;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
 import com.example.chat.payload.chat.MemberDto;
+import com.example.chat.payload.chat.UserId;
 import com.example.chat.payload.groups.CreateRequest;
 import com.example.chat.service.ChatService;
 import com.example.chat.service.MemberService;
@@ -84,5 +85,17 @@ public class ChatController {
         log.debug("Get members of the chat {}", chatId);
 
         return memberService.getChatMembers(chatId, actor);
+    }
+
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("{chatId}/members")
+    MemberDto addChatMember(
+            @PathVariable String chatId,
+            @RequestBody @Validated UserId userId,
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Add new member {} to the chat {}", userId, chatId);
+
+        return memberService.addChatMember(chatId, userId, actor);
     }
 }
