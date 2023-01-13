@@ -110,4 +110,16 @@ public class ChatController {
 
         return memberService.updateChatMember(chatId, memberId, memberDto, actor);
     }
+
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @DeleteMapping("{chatId}/members/{memberId}")
+    void updateChatMember(
+            @PathVariable String chatId,
+            @PathVariable String memberId,
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Remove member {} of the chat {}", memberId, chatId);
+
+        memberService.removeChatMember(chatId, memberId, actor);
+    }
 }
