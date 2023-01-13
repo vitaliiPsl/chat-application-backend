@@ -35,4 +35,15 @@ public interface MemberService {
      * @return created chat member
      */
     MemberDto addChatMember(String chatId, UserId userId, User actor);
+
+    /**
+     * Update member of the chat
+     *
+     * @param chatId    id of the chat
+     * @param userId    id of the user
+     * @param memberDto update details
+     * @param actor     authenticated user
+     * @return updated chat member
+     */
+    MemberDto updateChatMember(String chatId, String userId, MemberDto memberDto, User actor);
 }

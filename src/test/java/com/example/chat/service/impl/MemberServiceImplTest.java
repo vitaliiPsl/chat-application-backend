@@ -7,7 +7,6 @@ import com.example.chat.model.chat.member.MemberRole;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.MemberDto;
 import com.example.chat.payload.chat.UserId;
-import com.example.chat.repository.ChatRepository;
 import com.example.chat.repository.MemberRepository;
 import com.example.chat.repository.UserRepository;
 import com.example.chat.utils.PayloadMapper;
@@ -39,8 +38,6 @@ class MemberServiceImplTest {
     @Mock
     MemberRepository memberRepository;
     @Mock
-    ChatRepository chatRepository;
-    @Mock
     UserRepository userRepository;
     PayloadMapper mapper;
     MemberServiceImpl memberService;
@@ -51,7 +48,7 @@ class MemberServiceImplTest {
         ModelMapper modelMapper = Mockito.spy(ModelMapper.class);
         mapper = Mockito.spy(new PayloadMapper(modelMapper));
 
-        memberService = new MemberServiceImpl(memberRepository, chatRepository, userRepository, mapper);
+        memberService = new MemberServiceImpl(memberRepository, userRepository, mapper);
     }
 
     @Test
@@ -254,5 +251,144 @@ class MemberServiceImplTest {
         verify(memberRepository).findById(actorMemberId);
         verify(memberRepository).findById(userMemberId);
         verify(userRepository).findById(userId);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MemberRole.class, names = {"DEFAULT", "ADMIN"})
+    void whenUpdateChatMember_givenValidRequest_thenAddNewChatMember(MemberRole role) {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
+
+        String userId = "qwre-1234";
+        User user = User.builder().id(userId).build();
+
+        MemberId userMemberId = new MemberId(userId, chatId);
+        Member userMember = Member.builder().id(userMemberId).user(user).chat(chat).role(MemberRole.DEFAULT).build();
+
+        MemberDto memberDto = MemberDto.builder().role(role).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+        when(memberRepository.findById(userMemberId)).thenReturn(Optional.of(userMember));
+
+        MemberDto result = memberService.updateChatMember(chatId, userId, memberDto, actor);
+
+        // then
+        verify(memberRepository).findById(actorMemberId);
+        verify(memberRepository).findById(userMemberId);
+
+        assertThat(result.getRole(), Matchers.is(role));
+        assertThat(result.getUpdatedAt(), Matchers.notNullValue());
+    }
+
+    @Test
+    void whenUpdateChatMember_givenUpdateUserToOwner_thenDemoteCurrentOwner() {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
+
+        String userId = "qwre-1234";
+        User user = User.builder().id(userId).build();
+
+        MemberId userMemberId = new MemberId(userId, chatId);
+        Member userMember = Member.builder().id(userMemberId).user(user).chat(chat).role(MemberRole.DEFAULT).build();
+
+        MemberDto memberDto = MemberDto.builder().role(MemberRole.OWNER).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+        when(memberRepository.findById(userMemberId)).thenReturn(Optional.of(userMember));
+
+        MemberDto result = memberService.updateChatMember(chatId, userId, memberDto, actor);
+
+        // then
+        verify(memberRepository).findById(actorMemberId);
+        verify(memberRepository).findById(userMemberId);
+
+        assertThat(actorMember.getRole(), Matchers.is(MemberRole.ADMIN));
+        assertThat(userMember.getRole(), Matchers.is(MemberRole.OWNER));
+        assertThat(result.getRole(), Matchers.is(MemberRole.OWNER));
+        assertThat(result.getUpdatedAt(), Matchers.notNullValue());
+    }
+
+    @Test
+    void whenUpdateChatMember_givenActorIsNotChatMember_thenThrowException() {
+        // given
+        String chatId = "2134-abcd";
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+
+        String userId = "qwre-1234";
+        MemberDto memberDto = MemberDto.builder().role(MemberRole.ADMIN).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.updateChatMember(chatId, userId, memberDto, actor));
+        verify(memberRepository).findById(actorMemberId);
+    }
+
+    @Test
+    void whenUpdateChatMember_givenActorIsNotTheOwner_thenThrowException() {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.ADMIN).build();
+
+        String userId = "qwre-1234";
+
+        MemberDto memberDto = MemberDto.builder().role(MemberRole.ADMIN).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.updateChatMember(chatId, userId, memberDto, actor));
+        verify(memberRepository).findById(actorMemberId);
+    }
+
+    @Test
+    void whenUpdateChatMember_givenOwnerTriesToUpdateOwnRole_thenThrowException() {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
+
+        String userId = "qwre-1234";
+        MemberDto memberDto = MemberDto.builder().role(MemberRole.ADMIN).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.updateChatMember(chatId, userId, memberDto, actor));
+        verify(memberRepository).findById(actorMemberId);
     }
 }

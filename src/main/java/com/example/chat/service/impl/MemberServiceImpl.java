@@ -1,14 +1,12 @@
 package com.example.chat.service.impl;
 
 import com.example.chat.exception.ResourceNotFoundException;
-import com.example.chat.model.chat.Chat;
 import com.example.chat.model.chat.member.Member;
 import com.example.chat.model.chat.member.MemberId;
 import com.example.chat.model.chat.member.MemberRole;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.MemberDto;
 import com.example.chat.payload.chat.UserId;
-import com.example.chat.repository.ChatRepository;
 import com.example.chat.repository.MemberRepository;
 import com.example.chat.repository.UserRepository;
 import com.example.chat.service.MemberService;
@@ -30,7 +28,6 @@ import java.util.stream.Collectors;
 @Transactional
 public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
-    private final ChatRepository chatRepository;
     private final UserRepository userRepository;
     private final PayloadMapper mapper;
 
@@ -76,6 +73,36 @@ public class MemberServiceImpl implements MemberService {
         Member member = new Member(user, actorMember.getChat(), MemberRole.DEFAULT);
 
         member = memberRepository.save(member);
+        return mapper.mapMemberToMemberDto(member);
+    }
+
+    @Override
+    public MemberDto updateChatMember(String chatId, String userId, MemberDto memberDto, User actor) {
+        log.debug("Update member {} of the chat {}. Update details: {}", userId, chatId, memberDto);
+
+        Member actorMember = getMemberById(actor.getId(), chatId);
+        if (actorMember.getRole() != MemberRole.OWNER) {
+            log.error("Only the owner of the chat can update roles of other members");
+            throw new IllegalStateException("Only the owner of the chat can update roles of other members");
+        }
+
+        // there must be an owner of the chat, so the owners cannot change their role
+        if (actor.getId().equals(userId)) {
+            log.error("Owners cannot change their own role");
+            throw new IllegalStateException("Owners cannot change their role, as there must be an owner of the chat.");
+        }
+
+        Member member = getMemberById(userId, chatId);
+        // if the owner is trying to give ownership over the chat to someone else,
+        // then promote that member and demote current owner
+        if (memberDto.getRole() == MemberRole.OWNER) {
+            actorMember.setRole(MemberRole.ADMIN);
+            actorMember.setUpdatedAt(LocalDateTime.now());
+        }
+
+        member.setRole(memberDto.getRole());
+        member.setUpdatedAt(LocalDateTime.now());
+
         return mapper.mapMemberToMemberDto(member);
     }
 
