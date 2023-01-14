@@ -70,7 +70,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void whenGetUsersByNickname_whenThereAreUsersWithGivenNickname_thenReturnThoseUsers() {
+    void whenGetUsersByNickname_givenThereAreUsersWithGivenNickname_thenReturnThoseUsers() {
         // given
         String nickname = "test";
 
@@ -90,7 +90,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void whenGetUsersByNickname_whenThereAreNoUsersWithGivenNickname_thenReturnEmptyList() {
+    void whenGetUsersByNickname_givenThereAreNoUsersWithGivenNickname_thenReturnEmptyList() {
         // given
         String nickname = "test";
 
@@ -104,5 +104,34 @@ class UserServiceImplTest {
         // then
         verify(userRepository).findByNicknameContainingIgnoreCase(nickname);
         assertThat(result, Matchers.empty());
+    }
+
+    @Test
+    void whenGetUserDomainObject_givenUserExist_thenReturnUser() {
+        // given
+        String userId = "1234-qwer";
+        User user = User.builder().id(userId).email("user@mail.com").build();
+
+        // when
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        User result = userService.getUserDomainObject(userId);
+
+        // then
+        verify(userRepository).findById(userId);
+        assertThat(result, Matchers.is(user));
+    }
+
+    @Test
+    void whenGetUserDomainObject_givenUserDoesntExist_thenThrowException() {
+        // given
+        String userId = "1234-qwer";
+
+        // when
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(ResourceNotFoundException.class, () -> userService.getUserDomainObject(userId));
+        verify(userRepository).findById(userId);
     }
 }

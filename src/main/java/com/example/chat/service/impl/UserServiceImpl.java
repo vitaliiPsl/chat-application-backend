@@ -24,8 +24,8 @@ public class UserServiceImpl implements UserService {
     private final PayloadMapper mapper;
 
     @Override
-    public UserDto getUser(String userId) {
-        log.debug("Get user by id {}", userId);
+    public User getUserDomainObject(String userId) {
+        log.debug("Get user domain object. Id {}", userId);
 
         Optional<User> user = userRepository.findById(userId);
         if (user.isEmpty()) {
@@ -33,7 +33,15 @@ public class UserServiceImpl implements UserService {
             throw new ResourceNotFoundException(userId, User.class);
         }
 
-        return mapper.mapUserToUserDto(user.get());
+        return user.get();
+    }
+
+    @Override
+    public UserDto getUser(String userId) {
+        log.debug("Get user by id {}", userId);
+
+        User user = getUserDomainObject(userId);
+        return mapper.mapUserToUserDto(user);
     }
 
     @Override

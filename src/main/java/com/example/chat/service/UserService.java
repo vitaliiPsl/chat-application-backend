@@ -1,5 +1,6 @@
 package com.example.chat.service;
 
+import com.example.chat.model.user.User;
 import com.example.chat.payload.user.UserDto;
 
 import java.util.List;
@@ -10,6 +11,14 @@ import java.util.List;
  * @see com.example.chat.model.user.User
  */
 public interface UserService {
+
+    /**
+     * Get user as domain object
+     *
+     * @param userId id of the user
+     * @return retrieved user
+     */
+    User getUserDomainObject(String userId);
 
     /**
      * Get user by the give id
