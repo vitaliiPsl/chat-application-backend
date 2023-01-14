@@ -34,6 +34,14 @@ public class Chat {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "chat")
     private Set<Member> members = new HashSet<>();
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "message_id", referencedColumnName = "id")
+    private Message lastMessage;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "chat", cascade = CascadeType.REMOVE)
+    private Set<Message> messages = new HashSet<>();
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
