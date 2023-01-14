@@ -1,5 +1,6 @@
 package com.example.chat.service.impl;
 
+import com.example.chat.exception.ResourceNotFoundException;
 import com.example.chat.model.chat.Chat;
 import com.example.chat.model.chat.member.Member;
 import com.example.chat.model.chat.member.MemberId;
@@ -8,7 +9,7 @@ import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.MemberDto;
 import com.example.chat.payload.chat.UserId;
 import com.example.chat.repository.MemberRepository;
-import com.example.chat.repository.UserRepository;
+import com.example.chat.service.UserService;
 import com.example.chat.utils.PayloadMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +39,7 @@ class MemberServiceImplTest {
     @Mock
     MemberRepository memberRepository;
     @Mock
-    UserRepository userRepository;
+    UserService userService;
     PayloadMapper mapper;
     MemberServiceImpl memberService;
 
@@ -48,7 +49,7 @@ class MemberServiceImplTest {
         ModelMapper modelMapper = Mockito.spy(ModelMapper.class);
         mapper = Mockito.spy(new PayloadMapper(modelMapper));
 
-        memberService = new MemberServiceImpl(memberRepository, userRepository, mapper);
+        memberService = new MemberServiceImpl(memberRepository, userService, mapper);
     }
 
     @Test
@@ -159,7 +160,7 @@ class MemberServiceImplTest {
         // when
         when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
         when(memberRepository.findById(userMemberId)).thenReturn(Optional.empty());
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userService.getUserDomainObject(userId)).thenReturn(user);
         when(memberRepository.save(any(Member.class))).then(returnsFirstArg());
 
         MemberDto result = memberService.addChatMember(chatId, userIdDto, actor);
@@ -167,7 +168,7 @@ class MemberServiceImplTest {
         // then
         verify(memberRepository).findById(actorMemberId);
         verify(memberRepository).findById(userMemberId);
-        verify(userRepository).findById(userId);
+        verify(userService).getUserDomainObject(userId);
         verify(memberRepository).save(any(Member.class));
 
         assertThat(result.getUser().getId(), Matchers.is(user.getId()));
@@ -244,13 +245,13 @@ class MemberServiceImplTest {
         // when
         when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
         when(memberRepository.findById(userMemberId)).thenReturn(Optional.empty());
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userService.getUserDomainObject(userId)).thenThrow(new ResourceNotFoundException(userId, User.class));
 
         // then
         assertThrows(RuntimeException.class, () -> memberService.addChatMember(chatId, userIdDto, actor));
         verify(memberRepository).findById(actorMemberId);
         verify(memberRepository).findById(userMemberId);
-        verify(userRepository).findById(userId);
+        verify(userService).getUserDomainObject(userId);
     }
 
     @ParameterizedTest

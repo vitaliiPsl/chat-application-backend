@@ -1,5 +1,6 @@
 package com.example.chat.service;
 
+import com.example.chat.model.chat.member.Member;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.MemberDto;
 import com.example.chat.payload.chat.UserId;
@@ -16,6 +17,15 @@ public interface MemberService {
      * @return true, if is a member, false, if is not
      */
     boolean isMemberOfTheChat(String userId, String chatId);
+
+    /**
+     * Get chat member as a domain object
+     *
+     * @param userId id of the user
+     * @param chatId id of the chat
+     * @return retrieved member object
+     */
+    Member getMemberDomainObject(String userId, String chatId);
 
     /**
      * Get members of the chat with given id
