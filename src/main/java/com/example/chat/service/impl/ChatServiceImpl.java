@@ -3,15 +3,14 @@ package com.example.chat.service.impl;
 import com.example.chat.exception.ResourceNotFoundException;
 import com.example.chat.model.chat.Chat;
 import com.example.chat.model.chat.member.Member;
-import com.example.chat.model.chat.member.MemberId;
 import com.example.chat.model.chat.member.MemberRole;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
 import com.example.chat.payload.chat.UserId;
 import com.example.chat.repository.ChatRepository;
-import com.example.chat.repository.MemberRepository;
-import com.example.chat.repository.UserRepository;
 import com.example.chat.service.ChatService;
+import com.example.chat.service.MemberService;
+import com.example.chat.service.UserService;
 import com.example.chat.utils.PayloadMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,10 +29,23 @@ import java.util.stream.Collectors;
 @Transactional
 public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
-    private final UserRepository userRepository;
-    private final MemberRepository memberRepository;
+    private final UserService userService;
+    private final MemberService memberService;
 
     private final PayloadMapper mapper;
+
+    @Override
+    public Chat getChatDomainObject(String chatId) {
+        log.debug("Get chat domain object. Id {}", chatId);
+
+        Optional<Chat> chat = chatRepository.findById(chatId);
+        if (chat.isEmpty()) {
+            log.error("Chat with id {} doesn't exist", chatId);
+            throw new ResourceNotFoundException(chatId, Chat.class);
+        }
+
+        return chat.get();
+    }
 
     @Override
     public ChatDto createChat(ChatDto chatDto, User actor) {
@@ -48,13 +60,17 @@ public class ChatServiceImpl implements ChatService {
     public ChatDto updateChat(String chatId, ChatDto chatDto, User actor) {
         log.debug("Update chat {}. Update details {}. Actor: {}", chatId, chatDto, actor);
 
-        Member member = getMemberById(actor.getId(), chatId);
-        if(member.getRole() == MemberRole.DEFAULT) {
+        Member member = memberService.getMemberDomainObject(actor.getId(), chatId);
+        if (member.getRole() == MemberRole.DEFAULT) {
             log.error("Only the owner and admins can update the chat");
             throw new IllegalStateException("Only the owner and admins can update the chat");
         }
 
-        Chat chat = updateChat(member.getChat(), chatDto);
+        Chat chat = member.getChat();
+        chat.setName(chatDto.getName());
+        chat.setDescription(chatDto.getDescription());
+        chat.setUpdatedAt(LocalDateTime.now());
+
         return mapper.mapChatToChatDto(chat);
     }
 
@@ -62,8 +78,8 @@ public class ChatServiceImpl implements ChatService {
     public void deleteChat(String chatId, User actor) {
         log.debug("Delete chat {}", chatId);
 
-        Member member = getMemberById(actor.getId(), chatId);
-        if(member.getRole() != MemberRole.OWNER) {
+        Member member = memberService.getMemberDomainObject(actor.getId(), chatId);
+        if (member.getRole() != MemberRole.OWNER) {
             log.error("Only the owner can delete the chat");
             throw new IllegalStateException("Only the owner can delete the chat");
         }
@@ -78,7 +94,7 @@ public class ChatServiceImpl implements ChatService {
         log.debug("Get chat by id {}", chatId);
 
         // Get the member to verify that chat exists and the user is its member
-        Member member = getMemberById(actor.getId(), chatId);
+        Member member = memberService.getMemberDomainObject(actor.getId(), chatId);
 
         Chat chat = member.getChat();
         return mapper.mapChatToChatDto(chat);
@@ -92,32 +108,6 @@ public class ChatServiceImpl implements ChatService {
         List<Chat> chats = chatRepository.findByUserId(actor.getId());
 
         return chats.stream().map(mapper::mapChatToChatDto).collect(Collectors.toList());
-    }
-
-    private Member getMemberById(String userId, String chatId) {
-        log.debug("Get member: user id {}, chat id {}", userId, chatId);
-
-        MemberId id = new MemberId(userId, chatId);
-
-        Optional<Member> member = memberRepository.findById(id);
-        if(member.isEmpty()) {
-            log.error("User {} is not a member of chat {}", userId, chatId);
-            throw new IllegalStateException("Not a member of the chat");
-        }
-
-        return member.get();
-    }
-
-    private User getUserById(String userId) {
-        log.debug("Get user by id: {}", userId);
-
-        Optional<User> user = userRepository.findById(userId);
-        if (user.isEmpty()) {
-            log.error("User with id {} doesn't exist", userId);
-            throw new ResourceNotFoundException(userId, User.class);
-        }
-
-        return user.get();
     }
 
     private Chat buildChat(ChatDto chatDto, User actor) {
@@ -146,7 +136,7 @@ public class ChatServiceImpl implements ChatService {
                 .map(userId -> mapMember(userId.getId(), chat))
                 .collect(Collectors.toSet());
 
-        if(members.size() == 0) {
+        if (members.size() == 0) {
             log.error("There must be at least one other user in the chat");
             throw new IllegalStateException("You must provide at least one other user to create a chat");
         }
@@ -157,22 +147,14 @@ public class ChatServiceImpl implements ChatService {
     private Member mapMember(String userId, Chat chat) {
         log.debug("Map user with id {} to member of the chat {}", userId, chat);
 
-        User user = getUserById(userId);
+        User user = userService.getUserDomainObject(userId);
 
         Member member = new Member(user, chat, MemberRole.DEFAULT, chat.getCreatedAt());
-        if(chat.getMembers().contains(member)) {
+        if (chat.getMembers().contains(member)) {
             log.error("Cannot add user {} to the same chat multiple times", user);
             throw new IllegalStateException("Cannot add user to the same chat multiple times");
         }
 
         return member;
-    }
-
-    private static Chat updateChat(Chat chat, ChatDto chatDto) {
-        chat.setName(chatDto.getName());
-        chat.setDescription(chatDto.getDescription());
-        chat.setUpdatedAt(LocalDateTime.now());
-
-        return chat;
     }
 }

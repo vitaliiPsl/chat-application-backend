@@ -9,8 +9,8 @@ import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
 import com.example.chat.payload.chat.UserId;
 import com.example.chat.repository.ChatRepository;
-import com.example.chat.repository.MemberRepository;
-import com.example.chat.repository.UserRepository;
+import com.example.chat.service.MemberService;
+import com.example.chat.service.UserService;
 import com.example.chat.utils.PayloadMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +24,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,9 +36,9 @@ class ChatServiceImplTest {
     @Mock
     ChatRepository chatRepository;
     @Mock
-    UserRepository userRepository;
+    UserService userService;
     @Mock
-    MemberRepository memberRepository;
+    MemberService memberService;
 
     PayloadMapper mapper;
 
@@ -51,7 +50,7 @@ class ChatServiceImplTest {
         ModelMapper modelMapper = Mockito.spy(ModelMapper.class);
         mapper = Mockito.spy(new PayloadMapper(modelMapper));
 
-        chatService = new ChatServiceImpl(chatRepository, userRepository, memberRepository, mapper);
+        chatService = new ChatServiceImpl(chatRepository, userService, memberService, mapper);
     }
 
     @Test
@@ -64,13 +63,13 @@ class ChatServiceImplTest {
         ChatDto chatDto = ChatDto.builder().name("Test").description("Test chat").users(users).build();
 
         // when
-        when(userRepository.findById(other.getId())).thenReturn(Optional.of(other));
+        when(userService.getUserDomainObject(other.getId())).thenReturn(other);
         when(chatRepository.save(Mockito.any(Chat.class))).then(returnsFirstArg());
 
         ChatDto result = chatService.createChat(chatDto, actor);
 
         // then
-        verify(userRepository).findById(other.getId());
+        verify(userService).getUserDomainObject(other.getId());
         verify(chatRepository).save(Mockito.any(Chat.class));
 
         assertThat(result.getName(), Matchers.is(chatDto.getName()));
@@ -90,11 +89,11 @@ class ChatServiceImplTest {
 
         // when
         when(chatRepository.save(Mockito.any(Chat.class))).then(returnsFirstArg());
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userService.getUserDomainObject(userId)).thenThrow(new ResourceNotFoundException(userId, User.class));
 
         // then
         assertThrows(ResourceNotFoundException.class, () -> chatService.createChat(chatDto, actor));
-        verify(userRepository).findById(userId);
+        verify(userService).getUserDomainObject(userId);
     }
 
     @Test
@@ -112,11 +111,11 @@ class ChatServiceImplTest {
 
         // when
         when(chatRepository.save(Mockito.any(Chat.class))).then(returnsFirstArg());
-        when(userRepository.findById(id)).thenReturn(Optional.of(other));
+        when(userService.getUserDomainObject(id)).thenReturn(other);
 
         // then
         assertThrows(RuntimeException.class, () -> chatService.createChat(chatDto, actor));
-        verify(userRepository).findById(id);
+        verify(userService).getUserDomainObject(id);
     }
 
 
@@ -149,12 +148,12 @@ class ChatServiceImplTest {
         ChatDto chatDto = ChatDto.builder().name("Updated test").description("Updated description").build();
 
         // when
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+        when(memberService.getMemberDomainObject(actor.getId(), chat.getId())).thenReturn(member);
 
         ChatDto result = chatService.updateChat(chat.getId(), chatDto, actor);
 
         // then
-        verify(memberRepository).findById(memberId);
+        verify(memberService).getMemberDomainObject(actor.getId(), chat.getId());
 
         assertThat(result.getName(), Matchers.is(chatDto.getName()));
         assertThat(result.getDescription(), Matchers.is(chatDto.getDescription()));
@@ -173,102 +172,110 @@ class ChatServiceImplTest {
         ChatDto chatDto = ChatDto.builder().name("Updated test").description("Updated description").build();
 
         // when
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+        when(memberService.getMemberDomainObject(actor.getId(), chat.getId())).thenReturn(member);
 
         // then
         assertThrows(RuntimeException.class, () -> chatService.updateChat(chat.getId(), chatDto, actor));
-        verify(memberRepository).findById(memberId);
+        verify(memberService).getMemberDomainObject(actor.getId(), chat.getId());
     }
 
     @Test
     void whenUpdateChat_givenMemberDoesntExist_thenThrowException() {
         // given
-        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
+        String actorId = "1234-abcd";
+        User actor = User.builder().id(actorId).email("owner@mail.com").build();
 
         String chatId = "4321-qwer";
-
-        MemberId memberId = new MemberId(actor.getId(), chatId);
-
         ChatDto chatDto = ChatDto.builder().name("Updated test").description("Updated description").build();
 
         // when
-        when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
+        when(memberService.getMemberDomainObject(actorId, chatId)).thenThrow(new IllegalStateException());
 
         // then
         assertThrows(RuntimeException.class, () -> chatService.updateChat(chatId, chatDto, actor));
-        verify(memberRepository).findById(memberId);
+        verify(memberService).getMemberDomainObject(actorId, chatId);
     }
 
     @Test
     void whenDeleteChat_givenValidRequest_thenDeleteChat() {
         // given
-        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
-        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+        String actorId = "1234-abcd";
+        User actor = User.builder().id(actorId).email("owner@mail.com").build();
+
+        String chatId = "4321-qwer";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
 
         MemberId memberId = new MemberId(actor.getId(), chat.getId());
         Member member = Member.builder().id(memberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
 
         // when
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+        when(memberService.getMemberDomainObject(actorId, chatId)).thenReturn(member);
 
         chatService.deleteChat(chat.getId(), actor);
 
         // then
-        verify(memberRepository).findById(memberId);
+        verify(memberService).getMemberDomainObject(actorId, chatId);
         verify(chatRepository).delete(chat);
     }
 
     @Test
     void whenDeleteChat_givenMemberDoesntExist_thenThrowException() {
         // given
-        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
-        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+        String actorId = "1234-abcd";
+        User actor = User.builder().id(actorId).email("owner@mail.com").build();
 
-        MemberId memberId = new MemberId(actor.getId(), chat.getId());
+        String chatId = "4321-qwer";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
 
         // when
-        when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
+        when(memberService.getMemberDomainObject(actorId, chatId)).thenThrow(new IllegalStateException());
 
         // then
         assertThrows(IllegalStateException.class, () -> chatService.deleteChat(chat.getId(), actor));
-        verify(memberRepository).findById(memberId);
+        verify(memberService).getMemberDomainObject(actorId, chatId);
     }
 
     @ParameterizedTest
     @EnumSource(value = MemberRole.class, mode = EnumSource.Mode.INCLUDE, names = {"DEFAULT", "ADMIN"})
     void whenDeleteChat_givenMemberIsNotOwner_thenThrowException(MemberRole role) {
         // given
-        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
-        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+        String actorId = "1234-abcd";
+        User actor = User.builder().id(actorId).email("owner@mail.com").build();
+
+        String chatId = "4321-qwer";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
 
         MemberId memberId = new MemberId(actor.getId(), chat.getId());
         Member member = Member.builder().id(memberId).user(actor).chat(chat).role(role).build();
 
         // when
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+        when(memberService.getMemberDomainObject(actorId, chatId)).thenReturn(member);
 
         // then
         assertThrows(IllegalStateException.class, () -> chatService.deleteChat(chat.getId(), actor));
-        verify(memberRepository).findById(memberId);
+        verify(memberService).getMemberDomainObject(actorId, chatId);
     }
 
 
     @Test
     void whenGetChat_givenValidRequest_thenReturnChat() {
         // given
-        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
-        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+        String actorId = "1234-abcd";
+        User actor = User.builder().id(actorId).email("owner@mail.com").build();
+
+        String chatId = "4321-qwer";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
 
         MemberId memberId = new MemberId(actor.getId(), chat.getId());
         Member member = Member.builder().id(memberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
 
         // when
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+        when(memberService.getMemberDomainObject(actorId, chatId)).thenReturn(member);
 
         ChatDto result = chatService.getChat(chat.getId(), actor);
 
         // then
-        verify(memberRepository).findById(memberId);
+        verify(memberService).getMemberDomainObject(actorId, chatId);
 
         assertThat(result.getId(), Matchers.is(chat.getId()));
         assertThat(result.getName(), Matchers.is(chat.getName()));
@@ -277,17 +284,18 @@ class ChatServiceImplTest {
     @Test
     void whenGetChat_givenIsNotAMember_thenThrowException() {
         // given
-        User actor = User.builder().id("1234-abcd").email("owner@mail.com").build();
-        Chat chat = Chat.builder().id("4321-qwer").name("Test").build();
+        String actorId = "1234-abcd";
+        User actor = User.builder().id(actorId).email("owner@mail.com").build();
 
-        MemberId memberId = new MemberId(actor.getId(), chat.getId());
+        String chatId = "4321-qwer";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
 
         // when
-        when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
+        when(memberService.getMemberDomainObject(actorId, chatId)).thenThrow(new IllegalStateException());
 
         // then
         assertThrows(RuntimeException.class, () -> chatService.getChat(chat.getId(), actor));
-        verify(memberRepository).findById(memberId);
+        verify(memberService).getMemberDomainObject(actorId, chatId);
     }
 
     @Test

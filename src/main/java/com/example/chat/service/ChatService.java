@@ -1,5 +1,6 @@
 package com.example.chat.service;
 
+import com.example.chat.model.chat.Chat;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
 
@@ -7,8 +8,18 @@ import java.util.List;
 
 /**
  * Chat service
+ *
+ * @see Chat
  */
 public interface ChatService {
+
+    /**
+     * Get chat as domain object
+     *
+     * @param chatId id of the chat
+     * @return retrieved chat
+     */
+    Chat getChatDomainObject(String chatId);
 
     /**
      * Create new chat
@@ -49,7 +60,7 @@ public interface ChatService {
     /**
      * Get chats of authenticated user
      *
-     * @param actor  authenticated user
+     * @param actor authenticated user
      * @return retrieved chat
      */
     List<ChatDto> getChatsOfActor(User actor);
