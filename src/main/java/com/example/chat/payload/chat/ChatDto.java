@@ -39,6 +39,9 @@ public class ChatDto {
     private Set<MemberDto> members;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private MessageDto lastMessage;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime createdAt;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
