@@ -9,6 +9,8 @@ import com.example.chat.payload.groups.CreateRequest;
 import com.example.chat.service.ChatService;
 import com.example.chat.service.MemberService;
 import com.example.chat.service.MessageService;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.List;
 
+@SecurityRequirement(name = "bearerAuth")
 @Slf4j
 @RequiredArgsConstructor
 @RestController
@@ -31,7 +34,7 @@ public class ChatController {
 
     @GetMapping
     List<ChatDto> getChatsByUserId(
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Get chats of current user");
 
@@ -42,7 +45,7 @@ public class ChatController {
     @PostMapping
     ChatDto createChat(
             @RequestBody @Validated(CreateRequest.class) ChatDto chatDto,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Create new chat: {}", chatDto);
 
@@ -53,7 +56,7 @@ public class ChatController {
     ChatDto createChat(
             @PathVariable String chatId,
             @RequestBody @Valid ChatDto chatDto,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Update chat {}. Update details: {}", chatId, chatDto);
 
@@ -64,7 +67,7 @@ public class ChatController {
     @DeleteMapping("{chatId}")
     void createChat(
             @PathVariable String chatId,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Delete chat {}", chatId);
 
@@ -74,7 +77,7 @@ public class ChatController {
     @GetMapping("{chatId}")
     ChatDto getChat(
             @PathVariable String chatId,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Get chat {}", chatId);
 
@@ -84,7 +87,7 @@ public class ChatController {
     @GetMapping("{chatId}/members")
     List<MemberDto> getChatMembers(
             @PathVariable String chatId,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Get members of the chat {}", chatId);
 
@@ -96,7 +99,7 @@ public class ChatController {
     MemberDto addChatMember(
             @PathVariable String chatId,
             @RequestBody @Validated UserId userId,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Add new member {} to the chat {}", userId, chatId);
 
@@ -108,7 +111,7 @@ public class ChatController {
             @PathVariable String chatId,
             @PathVariable String memberId,
             @RequestBody @Valid MemberDto memberDto,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Update member {} of the chat {}. Update details: {}", memberId, chatId, memberDto);
 
@@ -120,7 +123,7 @@ public class ChatController {
     void updateChatMember(
             @PathVariable String chatId,
             @PathVariable String memberId,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Remove member {} of the chat {}", memberId, chatId);
 
@@ -132,7 +135,7 @@ public class ChatController {
             @PathVariable String chatId,
             @RequestParam(required = false) Long lastId,
             @RequestParam(required = false, defaultValue = "20") int limit,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Get {} messages of the chat {} with id less than {}", limit, chatId, lastId);
 
@@ -144,7 +147,7 @@ public class ChatController {
     MessageDto saveChatMessage(
             @PathVariable String chatId,
             @RequestBody @Valid MessageDto messageDto,
-            @AuthenticationPrincipal User actor
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
     ) {
         log.debug("Save message {} sent to the chat {}", messageDto, chatId);
 

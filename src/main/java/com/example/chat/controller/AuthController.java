@@ -5,6 +5,8 @@ import com.example.chat.payload.auth.AuthRequest;
 import com.example.chat.payload.auth.AuthResponse;
 import com.example.chat.payload.user.UserDto;
 import com.example.chat.service.AuthService;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -27,8 +29,9 @@ public class AuthController {
         return authService.signIn(request);
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("me")
-    UserDto getAuthenticatedUser(@AuthenticationPrincipal User user) {
+    UserDto getAuthenticatedUser(@Parameter(hidden = true) @AuthenticationPrincipal User user) {
         return authService.getActor(user);
     }
 }
