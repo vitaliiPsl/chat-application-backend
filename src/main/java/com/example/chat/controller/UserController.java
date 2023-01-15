@@ -2,6 +2,7 @@ package com.example.chat.controller;
 
 import com.example.chat.payload.user.UserDto;
 import com.example.chat.service.UserService;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,10 @@ public class UserController {
     }
 
     @GetMapping(params = "nickname")
-    List<UserDto> getUserByNickname(@RequestParam(name = "nickname") String nickname) {
+    List<UserDto> getUserByNickname(
+            @Parameter(name = "Nickname", description = "Nickname of the user")
+            @RequestParam(name = "nickname") String nickname
+    ) {
         log.debug("Get users by nickname: {}", nickname);
 
         return userService.getUsersByNickname(nickname);

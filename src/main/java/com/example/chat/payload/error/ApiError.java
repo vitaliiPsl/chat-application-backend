@@ -1,5 +1,6 @@
 package com.example.chat.payload.error;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,12 +13,16 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApiError {
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "Error mesage", example = "Invalid argument")
     private String message;
 
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "Error status")
     private HttpStatus status;
 
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "Debug message")
     private String debugMessage;
 
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "Error timestamp")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDateTime timestamp = LocalDateTime.now();
 
