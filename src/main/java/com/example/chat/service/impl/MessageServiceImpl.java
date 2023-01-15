@@ -11,6 +11,10 @@ import com.example.chat.service.MessageService;
 import com.example.chat.utils.PayloadMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +28,34 @@ public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
     private final MemberService memberService;
     private final PayloadMapper mapper;
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<MessageDto> getMessages(String chatId, Long lastMessageId, Integer limit, User actor) {
+        log.debug("Get top {} messages of the chat {} that are before message with id {}", limit, chatId, lastMessageId);
+
+        if(!memberService.isMemberOfTheChat(actor.getId(), chatId)) {
+            log.error("User {} is not a member of chat {}", actor.getId(), chatId);
+            throw new IllegalStateException("Not a member of the chat");
+        }
+
+        if (limit < 1) {
+            log.error("Number of messages is less than 1");
+            throw new IllegalStateException("Page size must not be less than one");
+        }
+
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        Pageable pageable = PageRequest.ofSize(limit).withSort(sort);
+
+        Page<Message> messages;
+        if (lastMessageId == null) {
+            messages = messageRepository.findAllByChatId(chatId, pageable);
+        } else {
+            messages = messageRepository.findAllByChatIdAndIdIsBefore(chatId, lastMessageId, pageable);
+        }
+
+        return messages.map(mapper::mapMessageToMessageDto);
+    }
 
     @Override
     public MessageDto saveMessage(String chatId, MessageDto messageDto, User actor) {

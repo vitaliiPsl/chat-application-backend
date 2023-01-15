@@ -18,6 +18,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -90,5 +96,117 @@ class MessageServiceImplTest {
         // then
         assertThrows(RuntimeException.class, () -> messageService.saveMessage(chatId, messageDto, actor));
         verify(memberService).getMemberDomainObject(actorId, chatId);
+    }
+
+    @Test
+    void whenGetMessages_givenLastMessageId_thenReturnMessagesThatAreBeforeMessageWithGiveId() {
+        // given
+        String chatId = "qwer-1234";
+
+        String userId = "1234-qwer";
+        User actor = User.builder().id(userId).build();
+
+        long lastMessageId = 51L;
+        int limit = 10;
+
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        PageRequest pageRequest = PageRequest.ofSize(limit).withSort(sort);
+
+        List<Message> messages = List.of(
+                Message.builder().id(50L).build(),
+                Message.builder().id(30L).build(),
+                Message.builder().id(2L).build()
+        );
+
+        Page<Message> page = new PageImpl<>(messages);
+
+        // when
+        when(memberService.isMemberOfTheChat(userId, chatId)).thenReturn(true);
+        when(messageRepository.findAllByChatIdAndIdIsBefore(chatId, lastMessageId, pageRequest)).thenReturn(page);
+
+        Page<MessageDto> result = messageService.getMessages(chatId, lastMessageId, limit, actor);
+
+        // then
+        verify(memberService).isMemberOfTheChat(userId, chatId);
+        verify(messageRepository).findAllByChatIdAndIdIsBefore(chatId, lastMessageId, pageRequest);
+
+        assertThat(result.getSize(), Matchers.is(3));
+        assertThat(result.getContent().get(0).getId(), Matchers.is(50L));
+        assertThat(result.getContent().get(1).getId(), Matchers.is(30L));
+        assertThat(result.getContent().get(2).getId(), Matchers.is(2L));
+    }
+
+    @Test
+    void whenGetMessages_givenLastMessageIdIsNull_thenReturnLastMessages() {
+        // given
+        String chatId = "qwer-1234";
+
+        String userId = "1234-qwer";
+        User actor = User.builder().id(userId).build();
+
+        int limit = 10;
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        PageRequest pageRequest = PageRequest.ofSize(limit).withSort(sort);
+
+        List<Message> messages = List.of(
+                Message.builder().id(50L).build(),
+                Message.builder().id(30L).build(),
+                Message.builder().id(2L).build()
+        );
+
+        Page<Message> page = new PageImpl<>(messages);
+
+        // when
+        when(memberService.isMemberOfTheChat(userId, chatId)).thenReturn(true);
+        when(messageRepository.findAllByChatId(chatId, pageRequest)).thenReturn(page);
+
+        Page<MessageDto> result = messageService.getMessages(chatId, null, limit, actor);
+
+        // then
+        verify(memberService).isMemberOfTheChat(userId, chatId);
+        verify(messageRepository).findAllByChatId(chatId, pageRequest);
+
+        assertThat(result.getSize(), Matchers.is(3));
+        assertThat(result.getContent().get(0).getId(), Matchers.is(50L));
+        assertThat(result.getContent().get(1).getId(), Matchers.is(30L));
+        assertThat(result.getContent().get(2).getId(), Matchers.is(2L));
+    }
+
+    @Test
+    void whenGetMessages_givenLimitIsLessThan1_thenThrowException() {
+        // given
+        String chatId = "qwer-1234";
+
+        String userId = "1234-qwer";
+        User actor = User.builder().id(userId).build();
+
+        int limit = 0;
+        long lastMessageId = 85;
+
+        // when
+        when(memberService.isMemberOfTheChat(userId, chatId)).thenReturn(true);
+
+        // then
+        assertThrows(RuntimeException.class, () -> messageService.getMessages(chatId, lastMessageId, limit, actor));
+        verify(memberService).isMemberOfTheChat(userId, chatId);
+    }
+
+    @Test
+    void whenGetMessages_givenActorIsNotChatMember_thenThrowException() {
+        // given
+        String chatId = "qwer-1234";
+
+        String userId = "1234-qwer";
+        User actor = User.builder().id(userId).build();
+
+        int limit = 0;
+        long lastMessageId = 85;
+
+        // when
+        when(memberService.isMemberOfTheChat(userId, chatId)).thenReturn(false);
+
+        // then
+        assertThrows(RuntimeException.class, () -> messageService.getMessages(chatId, lastMessageId, limit, actor));
+        verify(memberService).isMemberOfTheChat(userId, chatId);
     }
 }
