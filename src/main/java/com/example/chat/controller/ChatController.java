@@ -3,12 +3,15 @@ package com.example.chat.controller;
 import com.example.chat.model.user.User;
 import com.example.chat.payload.chat.ChatDto;
 import com.example.chat.payload.chat.MemberDto;
+import com.example.chat.payload.chat.MessageDto;
 import com.example.chat.payload.chat.UserId;
 import com.example.chat.payload.groups.CreateRequest;
 import com.example.chat.service.ChatService;
 import com.example.chat.service.MemberService;
+import com.example.chat.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -24,6 +27,7 @@ import java.util.List;
 public class ChatController {
     private final ChatService chatService;
     private final MemberService memberService;
+    private final MessageService messageService;
 
     @GetMapping
     List<ChatDto> getChatsByUserId(
@@ -121,5 +125,29 @@ public class ChatController {
         log.debug("Remove member {} of the chat {}", memberId, chatId);
 
         memberService.removeChatMember(chatId, memberId, actor);
+    }
+
+    @GetMapping("{chatId}/messages")
+    Page<MessageDto> getChatMessages(
+            @PathVariable String chatId,
+            @RequestParam(required = false) Long lastId,
+            @RequestParam(required = false, defaultValue = "20") int limit,
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Get {} messages of the chat {} with id less than {}", limit, chatId, lastId);
+
+        return messageService.getMessages(chatId, lastId, limit, actor);
+    }
+
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("{chatId}/messages")
+    MessageDto saveChatMessage(
+            @PathVariable String chatId,
+            @RequestBody @Valid MessageDto messageDto,
+            @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Save message {} sent to the chat {}", messageDto, chatId);
+
+        return messageService.saveMessage(chatId, messageDto, actor);
     }
 }
