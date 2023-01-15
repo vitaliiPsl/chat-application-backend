@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,6 +52,34 @@ class ChatServiceImplTest {
         mapper = Mockito.spy(new PayloadMapper(modelMapper));
 
         chatService = new ChatServiceImpl(chatRepository, userService, memberService, mapper);
+    }
+
+    @Test
+    void whenGetChatDomainObject_givenChatExist_thenReturnChat() {
+        // given
+        String chatId = "qwer-1234";
+        Chat chat = Chat.builder().id(chatId).build();
+
+        // when
+        when(chatRepository.findById(chatId)).thenReturn(Optional.of(chat));
+        Chat result = chatService.getChatDomainObject(chatId);
+
+        // then
+        verify(chatRepository).findById(chatId);
+        assertThat(result, Matchers.is(chat));
+    }
+
+    @Test
+    void whenGetChatDomainObject_givenChatDoesntExist_thenThrowException() {
+        // given
+        String chatId = "qwer-1234";
+
+        // when
+        when(chatRepository.findById(chatId)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(ResourceNotFoundException.class, () -> chatService.getChatDomainObject(chatId));
+        verify(chatRepository).findById(chatId);
     }
 
     @Test
