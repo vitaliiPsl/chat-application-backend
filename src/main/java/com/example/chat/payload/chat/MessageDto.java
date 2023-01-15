@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 @Data
@@ -25,6 +26,7 @@ public class MessageDto {
 
     @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     @NotNull(message = "Content of the message is required")
+    @Size(max = 1024, message = "Max length of the message is 1024 characters")
     private String content;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
