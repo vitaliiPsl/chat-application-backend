@@ -382,14 +382,13 @@ class MemberServiceImplTest {
         MemberId actorMemberId = new MemberId(actorId, chatId);
         Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
 
-        String userId = "qwre-1234";
         MemberDto memberDto = MemberDto.builder().role(MemberRole.ADMIN).build();
 
         // when
         when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
 
         // then
-        assertThrows(RuntimeException.class, () -> memberService.updateChatMember(chatId, userId, memberDto, actor));
+        assertThrows(RuntimeException.class, () -> memberService.updateChatMember(chatId, actorId, memberDto, actor));
         verify(memberRepository).findById(actorMemberId);
     }
 
