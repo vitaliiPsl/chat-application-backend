@@ -33,6 +33,7 @@ public class SecurityConfig {
         http.cors().and().csrf().disable();
 
         http.authorizeRequests()
+                .antMatchers("/ws").permitAll()
                 .antMatchers("/v3/api-docs", "/swagger-ui.html", "/swagger-ui/api-docs/swagger-config", "/swagger-ui/**").permitAll()
                 .antMatchers("/api/auth/signin", "/api/auth/signup").permitAll()
                 .anyRequest().authenticated();
