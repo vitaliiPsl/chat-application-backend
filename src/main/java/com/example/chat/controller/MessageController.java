@@ -18,7 +18,7 @@ import javax.validation.Valid;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("chats")
+@RequestMapping("/api/chats")
 public class MessageController {
     private final MessageService messageService;
 

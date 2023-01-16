@@ -20,7 +20,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/chats")
+@RequestMapping("/api/chats")
 public class MemberController {
     private final MemberService memberService;
 
