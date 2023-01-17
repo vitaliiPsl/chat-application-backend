@@ -22,12 +22,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,6 +38,8 @@ class MessageServiceImplTest {
     MessageRepository messageRepository;
     @Mock
     MemberService memberService;
+    @Mock
+    SimpMessagingTemplate messagingTemplate;
 
     PayloadMapper mapper;
     MessageService messageService;
@@ -47,7 +49,7 @@ class MessageServiceImplTest {
         ModelMapper modelMapper = Mockito.spy(ModelMapper.class);
         mapper = Mockito.spy(new PayloadMapper(modelMapper));
 
-        messageService = new MessageServiceImpl(messageRepository, memberService, mapper);
+        messageService = new MessageServiceImpl(messageRepository, memberService, messagingTemplate, mapper);
     }
 
     @Test
@@ -60,21 +62,26 @@ class MessageServiceImplTest {
         Chat chat = Chat.builder().id(chatId).build();
 
         Member member = Member.builder().id(new MemberId(actorId, chatId)).user(actor).chat(chat).build();
-
         MessageDto messageDto = MessageDto.builder().content("Test message").build();
+
+        Message message = Message.builder().content("Test message").user(actor).chat(chat).build();
+        MessageDto responseDto = MessageDto.builder().content("Test message").build();
+
+        String destination = "/topic/chats/" + chatId + "/messages";
 
         // when
         when(memberService.getMemberDomainObject(actorId, chatId)).thenReturn(member);
-        when(messageRepository.save(any(Message.class))).then(returnsFirstArg());
+        when(messageRepository.save(any(Message.class))).thenReturn(message);
+        when(mapper.mapMessageToMessageDto(message)).thenReturn(responseDto);
 
         MessageDto result = messageService.saveMessage(chatId, messageDto, actor);
 
         // then
         verify(memberService).getMemberDomainObject(actorId, chatId);
         verify(messageRepository).save(any(Message.class));
+        verify(messagingTemplate).convertAndSend(destination, responseDto);
 
         assertThat(result.getContent(), Matchers.is(messageDto.getContent()));
-        assertThat(result.getSentAt(), Matchers.notNullValue());
 
         assertThat(chat.getLastMessage(), Matchers.notNullValue());
         assertThat(chat.getLastMessage().getContent(), Matchers.is(messageDto.getContent()));

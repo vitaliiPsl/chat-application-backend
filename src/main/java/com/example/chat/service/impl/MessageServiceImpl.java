@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import java.time.LocalDateTime;
 public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
     private final MemberService memberService;
+    private final SimpMessagingTemplate messagingTemplate;
     private final PayloadMapper mapper;
 
     @Transactional(readOnly = true)
@@ -62,18 +64,35 @@ public class MessageServiceImpl implements MessageService {
         log.debug("Save message {} sent to the chat {}", messageDto, chatId);
 
         Member actorMember = memberService.getMemberDomainObject(actor.getId(), chatId);
-        Chat chat = actorMember.getChat();
 
-        Message message = buildMessage(messageDto, actor, chat);
-        message = messageRepository.save(message);
-        chat.setLastMessage(message);
+        // map and save the message
+        Message message = saveMessage(messageDto, actor, actorMember);
 
-        return mapper.mapMessageToMessageDto(message);
+        // send message to corresponding topic
+        MessageDto responseMessageDto = mapper.mapMessageToMessageDto(message);
+        sendMessageToTopic(chatId, responseMessageDto);
+
+        return responseMessageDto;
     }
 
     private Message buildMessage(MessageDto messageDto, User actor, Chat chat) {
         return Message.builder().user(actor).chat(chat)
                 .content(messageDto.getContent())
                 .sentAt(LocalDateTime.now()).build();
+    }
+
+    private Message saveMessage(MessageDto messageDto, User actor, Member actorMember) {
+        Chat chat = actorMember.getChat();
+
+        Message message = buildMessage(messageDto, actor, chat);
+        message = messageRepository.save(message);
+        chat.setLastMessage(message);
+
+        return message;
+    }
+
+    private void sendMessageToTopic(String chatId, MessageDto message) {
+        String destination = "/topic/chats/" + chatId + "/messages";
+        messagingTemplate.convertAndSend(destination, message);
     }
 }
