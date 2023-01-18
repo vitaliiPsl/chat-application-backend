@@ -1,5 +1,6 @@
 package com.example.chat.config.security.jwt;
 
+import com.example.chat.payload.error.ApiError;
 import com.example.chat.service.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -55,8 +55,8 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
     }
 
     private void writeErrorResponse(HttpServletResponse response) throws IOException {
-        var error = Map.of("message", "Invalid JWT token");
-        String responseBody = new ObjectMapper().writeValueAsString(error);
+        ApiError apiError = new ApiError(HttpStatus.UNAUTHORIZED, "Invalid token");
+        String responseBody = new ObjectMapper().writeValueAsString(apiError);
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

@@ -4,10 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -21,10 +18,6 @@ public class ApiError {
 
     @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "Debug message")
     private String debugMessage;
-
-    @Schema(accessMode = Schema.AccessMode.READ_ONLY, title = "Error timestamp")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDateTime timestamp = LocalDateTime.now();
 
     public ApiError(HttpStatus status, String message) {
         this.status = status;
