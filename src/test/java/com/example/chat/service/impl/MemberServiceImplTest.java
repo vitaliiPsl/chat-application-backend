@@ -588,4 +588,56 @@ class MemberServiceImplTest {
         verify(memberRepository).findById(actorMemberId);
         verify(memberRepository).findById(userMemberId);
     }
+
+    @Test
+    void whenGetChatMember_givenValidRequest_thenReturnMember() {
+        // given
+        String chatId = "2134-abcd";
+        Chat chat = Chat.builder().id(chatId).name("Test").build();
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+        Member actorMember = Member.builder().id(actorMemberId).user(actor).chat(chat).role(MemberRole.OWNER).build();
+
+        String userId = "qwre-1234";
+        User user = User.builder().id(userId).build();
+
+        MemberId userMemberId = new MemberId(userId, chatId);
+        Member userMember = Member.builder().id(userMemberId).user(user).chat(chat).role(MemberRole.DEFAULT).build();
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.of(actorMember));
+        when(memberRepository.findById(userMemberId)).thenReturn(Optional.of(userMember));
+
+        MemberDto result = memberService.getChatMember(chatId, userId, actor);
+
+        // then
+        verify(memberRepository).findById(actorMemberId);
+        verify(memberRepository).findById(userMemberId);
+
+        assertThat(result.getUser().getId(), Matchers.is(userId));
+    }
+
+
+    @Test
+    void whenGetChatMember_givenActorIsNotChatMember_thenThrowError() {
+        // given
+        String chatId = "2134-abcd";
+
+        String actorId = "1234-qwer";
+        User actor = User.builder().id(actorId).build();
+
+        MemberId actorMemberId = new MemberId(actorId, chatId);
+
+        String userId = "qwre-1234";
+
+        // when
+        when(memberRepository.findById(actorMemberId)).thenReturn(Optional.empty());
+
+        // then
+        assertThrows(RuntimeException.class, () -> memberService.getChatMember(chatId, userId, actor));
+        verify(memberRepository).findById(actorMemberId);
+    }
 }

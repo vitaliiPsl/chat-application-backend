@@ -65,4 +65,13 @@ public interface MemberService {
      * @param actor  authenticated user
      */
     void removeChatMember(String chatId, String user, User actor);
+
+    /**
+     * Get member of the chat
+     * @param chatId id of the chat
+     * @param userId id of the user
+     * @param actor authenticated user
+     * @return member of the chat exist
+     */
+    MemberDto getChatMember(String chatId, String userId, User actor);
 }

@@ -131,6 +131,19 @@ public class MemberServiceImpl implements MemberService {
         }
     }
 
+    @Override
+    public MemberDto getChatMember(String chatId, String userId, User actor) {
+        log.debug("Get member {} of the chat {}", userId, chatId);
+
+        if (!isMemberOfTheChat(actor.getId(), chatId)) {
+            log.error("User {} is not a member of chat {}", actor.getId(), chatId);
+            throw new IllegalStateException("Not a member of the chat");
+        }
+
+        Member member = getMemberDomainObject(userId, chatId);
+        return mapper.mapMemberToMemberDto(member);
+    }
+
     private void leaveChat(Member member) {
         if (member.getRole() == MemberRole.OWNER) {
             log.error("Owner must assign ownership over the chat to another member before leaving");

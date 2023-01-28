@@ -34,6 +34,17 @@ public class MemberController {
         return memberService.getChatMembers(chatId, actor);
     }
 
+    @GetMapping("{chatId}/members/{userId}")
+    MemberDto getChatMember(
+            @PathVariable String chatId,
+            @PathVariable String userId,
+            @Parameter(hidden = true) @AuthenticationPrincipal User actor
+    ) {
+        log.debug("Get member {} of the chat {}", userId, chatId);
+
+        return memberService.getChatMember(chatId, userId, actor);
+    }
+
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("{chatId}/members")
     MemberDto addChatMember(

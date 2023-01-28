@@ -26,4 +26,12 @@ public class MemberId implements Serializable {
     public int hashCode() {
         return Objects.hash(userId, chatId);
     }
+
+    @Override
+    public String toString() {
+        return "MemberId{" +
+                "userId='" + userId + '\'' +
+                ", chatId='" + chatId + '\'' +
+                '}';
+    }
 }
