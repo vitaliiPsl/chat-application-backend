@@ -1,5 +1,6 @@
 package com.example.chat.service.impl;
 
+import com.example.chat.exception.ForbiddenException;
 import com.example.chat.exception.ResourceNotFoundException;
 import com.example.chat.model.chat.Chat;
 import com.example.chat.model.chat.member.Member;
@@ -63,7 +64,7 @@ public class ChatServiceImpl implements ChatService {
         Member member = memberService.getMemberDomainObject(actor.getId(), chatId);
         if (member.getRole() == MemberRole.DEFAULT) {
             log.error("Only the owner and admins can update the chat");
-            throw new IllegalStateException("Only the owner and admins can update the chat");
+            throw new ForbiddenException("Only the owner and admins can update the chat");
         }
 
         Chat chat = member.getChat();
@@ -81,7 +82,7 @@ public class ChatServiceImpl implements ChatService {
         Member member = memberService.getMemberDomainObject(actor.getId(), chatId);
         if (member.getRole() != MemberRole.OWNER) {
             log.error("Only the owner can delete the chat");
-            throw new IllegalStateException("Only the owner can delete the chat");
+            throw new ForbiddenException("Only the owner can delete the chat");
         }
 
         Chat chat = member.getChat();

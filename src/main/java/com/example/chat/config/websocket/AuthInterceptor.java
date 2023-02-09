@@ -1,5 +1,6 @@
 package com.example.chat.config.websocket;
 
+import com.example.chat.exception.ForbiddenException;
 import com.example.chat.model.user.User;
 import com.example.chat.service.JwtService;
 import com.example.chat.service.MemberService;
@@ -13,6 +14,7 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
@@ -44,7 +46,7 @@ public class AuthInterceptor implements ChannelInterceptor {
 
         if (authorization == null || authorization.isBlank() || !authorization.startsWith("Bearer ")) {
             log.error("Unauthorized");
-            throw new IllegalStateException("Unauthorized");
+            throw new BadCredentialsException("Unauthorized");
         }
 
         String token = authorization.replace("Bearer ", "");
@@ -79,7 +81,7 @@ public class AuthInterceptor implements ChannelInterceptor {
         String chatId = resources[0];
         if(!memberService.isMemberOfTheChat(user.getId(), chatId)) {
             log.error("User {} is not a member of the chat {}", user.getId(), chatId);
-            throw new IllegalStateException("Not a member of the chat");
+            throw new ForbiddenException("Not a member of the chat");
         }
     }
 }

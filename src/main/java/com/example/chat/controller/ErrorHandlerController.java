@@ -1,5 +1,6 @@
 package com.example.chat.controller;
 
+import com.example.chat.exception.ForbiddenException;
 import com.example.chat.exception.ResourceAlreadyExistException;
 import com.example.chat.exception.ResourceNotFoundException;
 import com.example.chat.payload.error.ApiError;
@@ -15,8 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Optional;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
 
 @Slf4j
 @RestControllerAdvice
@@ -42,7 +42,7 @@ public class ErrorHandlerController {
         log.error("handle authentication exception: {}", e.getMessage(), e);
 
         String error = "Invalid username or password";
-        return buildResponseEntity(new ApiError(HttpStatus.FORBIDDEN, error));
+        return buildResponseEntity(new ApiError(HttpStatus.UNAUTHORIZED, error));
     }
 
     @ExceptionHandler(BindException.class)
@@ -67,7 +67,7 @@ public class ErrorHandlerController {
     protected ResponseEntity<ApiError> handleResourceAlreadyExistException(ResourceAlreadyExistException e) {
         log.error("handle resource already exist: {}", e.getMessage(), e);
 
-        return buildResponseEntity(new ApiError(NOT_FOUND, e.getMessage(), e));
+        return buildResponseEntity(new ApiError(BAD_REQUEST, e.getMessage(), e));
     }
 
     @ExceptionHandler(IllegalStateException.class)
@@ -75,6 +75,13 @@ public class ErrorHandlerController {
         log.error("handle illegal state: {}", e.getMessage(), e);
 
         return buildResponseEntity(new ApiError(BAD_REQUEST, e.getMessage(), e));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    protected ResponseEntity<ApiError> handleForbiddenException(ForbiddenException e) {
+        log.error("handle forbidden state: {}", e.getMessage(), e);
+
+        return buildResponseEntity(new ApiError(FORBIDDEN, e.getMessage(), e));
     }
 
     private ResponseEntity<ApiError> buildResponseEntity(ApiError apiError) {

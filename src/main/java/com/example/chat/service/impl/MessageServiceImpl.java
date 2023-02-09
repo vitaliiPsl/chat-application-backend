@@ -1,5 +1,6 @@
 package com.example.chat.service.impl;
 
+import com.example.chat.exception.ForbiddenException;
 import com.example.chat.model.chat.Chat;
 import com.example.chat.model.chat.Message;
 import com.example.chat.model.chat.member.Member;
@@ -38,7 +39,7 @@ public class MessageServiceImpl implements MessageService {
 
         if(!memberService.isMemberOfTheChat(actor.getId(), chatId)) {
             log.error("User {} is not a member of chat {}", actor.getId(), chatId);
-            throw new IllegalStateException("Not a member of the chat");
+            throw new ForbiddenException("Not a member of the chat");
         }
 
         if (limit < 1) {

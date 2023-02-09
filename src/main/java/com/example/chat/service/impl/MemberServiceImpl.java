@@ -1,5 +1,6 @@
 package com.example.chat.service.impl;
 
+import com.example.chat.exception.ForbiddenException;
 import com.example.chat.model.chat.member.Member;
 import com.example.chat.model.chat.member.MemberId;
 import com.example.chat.model.chat.member.MemberRole;
@@ -49,7 +50,7 @@ public class MemberServiceImpl implements MemberService {
         Optional<Member> member = memberRepository.findById(id);
         if (member.isEmpty()) {
             log.error("User {} is not a member of chat {}", userId, chatId);
-            throw new IllegalStateException("Not a member of the chat");
+            throw new ForbiddenException("Not a member of the chat");
         }
 
         return member.get();
@@ -62,7 +63,7 @@ public class MemberServiceImpl implements MemberService {
 
         if (!isMemberOfTheChat(actor.getId(), chatId)) {
             log.error("User {} is not a member of chat {}", actor.getId(), chatId);
-            throw new IllegalStateException("Not a member of the chat");
+            throw new ForbiddenException("Not a member of the chat");
         }
 
         List<Member> members = memberRepository.findByChat_Id(chatId);
@@ -96,7 +97,7 @@ public class MemberServiceImpl implements MemberService {
         Member actorMember = getMemberDomainObject(actor.getId(), chatId);
         if (actorMember.getRole() != MemberRole.OWNER) {
             log.error("Only the owner of the chat can update roles of other members");
-            throw new IllegalStateException("Only the owner of the chat can update roles of other members");
+            throw new ForbiddenException("Only the owner of the chat can update roles of other members");
         }
 
         // there must be an owner of the chat, so the owners cannot change their role
@@ -137,7 +138,7 @@ public class MemberServiceImpl implements MemberService {
 
         if (!isMemberOfTheChat(actor.getId(), chatId)) {
             log.error("User {} is not a member of chat {}", actor.getId(), chatId);
-            throw new IllegalStateException("Not a member of the chat");
+            throw new ForbiddenException("Not a member of the chat");
         }
 
         Member member = getMemberDomainObject(userId, chatId);
@@ -156,18 +157,18 @@ public class MemberServiceImpl implements MemberService {
     private void removeMember(String chatId, String userId, Member actorMember) {
         if (actorMember.getRole() == MemberRole.DEFAULT) {
             log.error("Only the owner and admins can remove other users");
-            throw new IllegalStateException("Only the owner and admins can remove other users");
+            throw new ForbiddenException("Only the owner and admins can remove other users");
         }
 
         Member member = getMemberDomainObject(userId, chatId);
         if (member.getRole() == MemberRole.OWNER) {
             log.error("No one can remove the owner of the chat");
-            throw new IllegalStateException("No one can remove the owner of the chat");
+            throw new ForbiddenException("No one can remove the owner of the chat");
         }
 
         if (member.getRole() == MemberRole.ADMIN && actorMember.getRole() != MemberRole.OWNER) {
             log.error("Only owner can remove admin");
-            throw new IllegalStateException("Only owner can remove admin");
+            throw new ForbiddenException("Only owner can remove admin");
         }
 
         memberRepository.delete(member);
